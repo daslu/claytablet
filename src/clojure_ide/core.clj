@@ -8,16 +8,31 @@
             [cider.piggieback :refer [wrap-cljs-repl]]
             [ring.adapter.jetty :refer [run-jetty]]))
 
-(defonce server (atom nil))
+(defonce nrepl-server (atom nil))
+(defonce jetty-server (atom nil))
 
 (defn start-nrepl []
-  (reset! server (start-server :port 7000
-                               :handler default-handler)))
+  (reset! nrepl-server (start-server :port 7000
+                                    :handler default-handler)))
 
 (defn stop-nrepl []
-  (when @server
-    (stop-server @server)
-    (reset! server nil)))
+  (when @nrepl-server
+    (stop-server @nrepl-server)
+    (reset! nrepl-server nil)))
+
+(defn start-jetty []
+  (reset! jetty-server (run-jetty app {:port 3000 :join? false}))
+  (println "Jetty server started on port 3000"))
+
+(defn stop-jetty []
+  (when @jetty-server
+    (.stop @jetty-server)
+    (reset! jetty-server nil)
+    (println "Jetty server stopped")))
+
+(defn restart-jetty []
+  (stop-jetty)
+  (start-jetty))
 
 (defn list-files []
   ;; Placeholder for listing files from the server's filesystem
@@ -45,17 +60,22 @@
   (GET "/" []
     (-> (response/resource-response "index.html" {:root "public"})
         (response/content-type "text/html; charset=utf-8")))
-  (GET "/api/files" [] (response/response (json/generate-string (list-files))))
-  (GET "/api/files/*" [*] 
+  (GET "/api/files" []
+    (-> (response/response (json/generate-string (list-files)))
+        (response/content-type "application/json; charset=utf-8")))
+  (GET "/api/files/*" [*]
     (let [path (str "/" *)]
-      (response/response (json/generate-string (load-file path)))))
-  (POST "/api/files/*" [* :as req] 
+      (-> (response/response (json/generate-string (load-file path)))
+          (response/content-type "application/json; charset=utf-8"))))
+  (POST "/api/files/*" [* :as req]
     (let [path (str "/" *)
           content (slurp (:body req))]
-      (response/response (json/generate-string (save-file path content)))))
+      (-> (response/response (json/generate-string (save-file path content)))
+          (response/content-type "application/json; charset=utf-8"))))
   (POST "/api/eval" {body :body}
     (let [code (slurp body)]
-      (response/response (json/generate-string (eval-code code)))))
+      (-> (response/response (json/generate-string (eval-code code)))
+          (response/content-type "application/json; charset=utf-8"))))
   (route/resources "/")
   (route/not-found "Not Found"))
 
@@ -64,8 +84,8 @@
 
 (defn -main []
   (start-nrepl)
-  (println "Starting server on port 3000")
-  (run-jetty app {:port 3000 :join? false}))
+  (start-jetty)
+  (println "Clojure IDE is running."))
 
 (comment
   (-main))
