@@ -16,6 +16,9 @@
     .file-path { font-size: 0.9em; color: #555; }
     #eval-buttons { margin: 10px 0; }
     #eval-buttons button { margin-right: 5px; }
+    .highlight-last-form {
+      background-color: rgba(255, 255, 0, 0.4);
+    }
   </style>
 </head>
 <body>
@@ -60,6 +63,8 @@
       value: '// Select a file to start editing'
     });
 
+    let lastFormMarker = null;
+
     function fetchFiles() {
       fetch('/api/files')
         .then(response => response.json())
@@ -96,6 +101,7 @@
         .then(data => {
           currentFilePath = data.path;
           editor.setValue(data.content);
+          clearLastFormHighlight();
         })
         .catch(error => {
           alert(error.message);
@@ -242,9 +248,43 @@
       return matches ? matches : [];
     }
 
+    // Highlighting Functions
+    let lastFormHighlighted = null;
+
+    function highlightLastForm(code) {
+      clearLastFormHighlight();
+
+      const totalLines = editor.lineCount();
+      let found = false;
+
+      for (let line = 0; line < totalLines; line++) {
+        const lineContent = editor.getLine(line);
+        const index = lineContent.lastIndexOf(code);
+        if (index !== -1) {
+          const from = {line: line, ch: index};
+          const to = {line: line, ch: index + code.length};
+          lastFormHighlighted = editor.markText(from, to, {className: 'highlight-last-form'});
+          found = true;
+          break;
+        }
+      }
+
+      if (!found && code.trim() !== '') {
+        alert('Could not find the last form in the editor to highlight.');
+      }
+    }
+
+    function clearLastFormHighlight() {
+      if (lastFormHighlighted) {
+        lastFormHighlighted.clear();
+        lastFormHighlighted = null;
+      }
+    }
+
     document.getElementById('eval-all-btn').onclick = () => {
       const code = getAllForms();
       evaluateCode(code);
+      highlightLastForm(code.split('\n').filter(line => line.trim() !== '').pop() || '');
     };
 
     document.getElementById('eval-last-btn').onclick = () => {
@@ -254,6 +294,7 @@
         return;
       }
       evaluateCode(code);
+      highlightLastForm(code);
     };
 
     document.getElementById('eval-top-btn').onclick = () => {
@@ -263,6 +304,7 @@
         return;
       }
       evaluateCode(code);
+      highlightLastForm(code);
     };
 
     // Key bindings
@@ -270,6 +312,7 @@
       'Ctrl-Alt-Enter': () => {
         const code = getAllForms();
         evaluateCode(code);
+        highlightLastForm(code.split('\n').filter(line => line.trim() !== '').pop() || '');
       },
       'Ctrl-Alt-L': () => {
         const code = getLastFormBeforeCursor();
@@ -278,6 +321,7 @@
           return;
         }
         evaluateCode(code);
+        highlightLastForm(code);
       },
       'Ctrl-Alt-T': () => {
         const code = getTopLevelForm();
@@ -286,6 +330,7 @@
           return;
         }
         evaluateCode(code);
+        highlightLastForm(code);
       }
     });
 
