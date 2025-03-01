@@ -1,12 +1,13 @@
 (ns clojure-ide.core
-  (:require [compojure.core :refer [GET POST routes defroutes]]
+  (:require [compojure.core :refer [GET POST defroutes]]
             [compojure.route :as route]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
             [ring.util.response :as response]
             [cheshire.core :as json]
             [nrepl.server :refer [start-server stop-server default-handler]]
             [cider.piggieback :refer [wrap-cljs-repl]]
-            [ring.adapter.jetty :refer [run-jetty]]))
+            [ring.adapter.jetty :refer [run-jetty]]
+            [clojure.java.io :as io]))
 
 (defonce nrepl-server (atom nil))
 (defonce jetty-server (atom nil))
@@ -34,27 +35,31 @@
   (stop-jetty)
   (start-jetty))
 
+(defn list-clojure-files [dir]
+  (let [file (io/file dir)]
+    (filter #(.endsWith (.getName %) ".clj")
+            (file-seq file))))
+
 (defn list-files []
-  ;; Placeholder for listing files from the server's filesystem
-  ;; Implement filesystem browsing logic here
-  [{:name "core.clj" :path "/src/clojure_ide/core.clj"}
-   {:name "project.clj" :path "/project.clj"}])
+  (let [clojure-files (list-clojure-files "./src")]
+    (mapv (fn [f]
+            {:name (.getName f)
+             :path (.getPath f)})
+          clojure-files)))
 
 (defn load-file [path]
-  ;; Placeholder for loading file content
-  ;; Implement file reading logic here
-  (prn [:path path])
+  ;; Load and return the content of the specified file
   {:path path
-   :content (slurp (str "./" path))})
+   :content (slurp path)})
 
 (defn save-file [path content]
-  ;; Placeholder for saving file content
-  ;; Implement file writing logic here
+  ;; Save the provided content to the specified file
+  (spit path content)
   {:status "success"})
 
 (defn eval-code [code]
-  ;; Placeholder for evaluating Clojure code via nREPL
-  ;; Implement code evaluation logic here
+  ;; Evaluate the provided Clojure code via nREPL
+  ;; For security reasons, this is a placeholder and should be implemented carefully
   {:result "(println \"Hello from nREPL\")"})
 
 (defroutes app-routes
@@ -65,14 +70,23 @@
     (-> (response/response (json/generate-string (list-files)))
         (response/content-type "application/json; charset=utf-8")))
   (GET "/api/files/*" [*]
-    (let [path (str "/" *)]
-      (-> (response/response (json/generate-string (load-file path)))
-          (response/content-type "application/json; charset=utf-8"))))
+    (let [path (str "./" *)
+          file (io/file path)]
+      (if (.exists file)
+        (-> (response/response (json/generate-string (load-file path)))
+            (response/content-type "application/json; charset=utf-8"))
+        (-> (response/response (json/generate-string {:error "File not found"}))
+            (response/status 404)
+            (response/content-type "application/json; charset=utf-8")))))
   (POST "/api/files/*" [* :as req]
-    (let [path (str "/" *)
+    (let [path (str "./" *)
           content (slurp (:body req))]
-      (-> (response/response (json/generate-string (save-file path content)))
-          (response/content-type "application/json; charset=utf-8"))))
+      (if (.exists (io/file path))
+        (-> (response/response (json/generate-string (save-file path content)))
+            (response/content-type "application/json; charset=utf-8"))
+        (-> (response/response (json/generate-string {:error "File not found"}))
+            (response/status 404)
+            (response/content-type "application/json; charset=utf-8")))))
   (POST "/api/eval" {body :body}
     (let [code (slurp body)]
       (-> (response/response (json/generate-string (eval-code code)))

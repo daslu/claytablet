@@ -6,13 +6,14 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
   <style>
     body { font-family: Arial, sans-serif; margin: 0; display: flex; height: 100vh; }
-    #file-browser { width: 20%; border-right: 1px solid #ccc; padding: 10px; overflow-y: auto; }
-    #editor { width: 80%; padding: 10px; }
-    #editor-area { height: 70vh; }
+    #file-browser { width: 25%; border-right: 1px solid #ccc; padding: 10px; overflow-y: auto; }
+    #editor { width: 75%; padding: 10px; display: flex; flex-direction: column; }
+    #editor-area { flex: 1; height: 70vh; }
     #output { height: 30vh; border-top: 1px solid #ccc; padding: 10px; overflow-y: auto; background-color: #f9f9f9; }
     .file { cursor: pointer; padding: 5px; }
     .file:hover { background-color: #e0e0e0; }
     #instructions { padding: 10px; background-color: #f0f0f0; border-bottom: 1px solid #ccc; }
+    .file-path { font-size: 0.9em; color: #555; }
   </style>
 </head>
 <body>
@@ -56,7 +57,16 @@
           data.forEach(file => {
             const fileDiv = document.createElement('div');
             fileDiv.className = 'file';
-            fileDiv.textContent = file.name;
+            
+            const fileName = document.createElement('div');
+            fileName.textContent = file.name;
+
+            const filePath = document.createElement('div');
+            filePath.className = 'file-path';
+            filePath.textContent = file.path;
+
+            fileDiv.appendChild(fileName);
+            fileDiv.appendChild(filePath);
             fileDiv.onclick = () => loadFile(file.path);
             filesDiv.appendChild(fileDiv);
           });
@@ -65,10 +75,18 @@
 
     function loadFile(path) {
       fetch(`/api/files${path}`)
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('File not found');
+          }
+          return response.json();
+        })
         .then(data => {
           currentFilePath = data.path;
           editor.setValue(data.content);
+        })
+        .catch(error => {
+          alert(error.message);
         });
     }
 
@@ -89,12 +107,11 @@
         } else {
           alert('Failed to save file.');
         }
+      })
+      .catch(() => {
+        alert('Error saving file.');
       });
     };
-
-    editor.on('change', () => {
-      // Optionally, implement auto-save or live evaluation
-    });
 
     // Example: Evaluate code on Ctrl+Enter
     editor.setOption('extraKeys', {
@@ -107,6 +124,9 @@
         .then(response => response.json())
         .then(data => {
           document.getElementById('output').textContent = data.result;
+        })
+        .catch(() => {
+          document.getElementById('output').textContent = 'Error evaluating code.';
         });
       }
     });
