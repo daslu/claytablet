@@ -1,6 +1,6 @@
 {:paths ["src" "resources"]
 
- :deps {org.clojure/clojure {:mvn/version "j"}
+ :deps {org.clojure/clojure {:mvn/version "1.12.0"}
         ring/ring-defaults {:mvn/version "0.6.0"}
         ring {:mvn/version "2.0.0-alpha1"}
         compojure {:mvn/version "1.7.1"}
