@@ -63,7 +63,7 @@
       value: '// Select a file to start editing'
     });
 
-    let lastFormMarker = null;
+    let lastFormHighlight = null;
 
     function fetchFiles() {
       fetch('/api/files')
@@ -180,8 +180,6 @@
     }
 
     function getCurrentForm(pos) {
-      // Implement a more robust form detection if necessary
-      // For simplicity, using getClojureForms on the entire code
       const code = editor.getValue();
       const forms = getClojureForms(code);
       if (forms.length === 0) return '';
@@ -194,7 +192,7 @@
       return forms.length > 0 ? forms[forms.length -1] : '';
     }
 
-    // Simple Clojure form extractor (not fully reliable)
+    // Enhanced Clojure form extractor to find minimal complete forms
     function getClojureForms(code) {
       const forms = [];
       let stack = [];
@@ -202,7 +200,7 @@
       let inString = false;
       for (let i =0; i< code.length; i++) {
         const char = code[i];
-        if (char === '"') {
+        if (char === '"' && code[i-1] !== '\\') {
           inString = !inString;
         }
         if (!inString) {
@@ -213,7 +211,6 @@
           else if (char === ')' || char === ']' || char === '}') {
             if (stack.length ===0) continue;
             const last = stack.pop();
-            // Simple matching, not handling quotes or escaped chars
             if ((last === '(' && char === ')') ||
                 (last === '[' && char === ']') ||
                 (last === '{' && char === '}')) {
@@ -242,6 +239,7 @@
       return forms;
     }
 
+    // Function to extract the last literal before the cursor
     function getLastLiterals(code) {
       const regex = /"(?:\\.|[^"\\])*"|\b\d+\b|\btrue\b|\bfalse\b|\bnil\b/g;
       const matches = code.match(regex);
@@ -263,7 +261,7 @@
       doc.eachLine((lineHandle) => {
         const line = lineHandle.lineNo();
         const lineText = doc.getLine(line);
-        const index = lineText.lastIndexOf(code);
+        const index = lineText.indexOf(code);
         if (index !== -1) {
           const from = {line: line, ch: index};
           const to = {line: line, ch: index + code.length};
@@ -290,15 +288,18 @@
       }
     }
 
-    // Highlight on every cursor movement
-    editor.on('cursorActivity', () => {
+    // Function to always highlight the minimal complete form to the left of the cursor
+    function updateHighlight() {
       const code = getLastFormBeforeCursor();
+      clearLastFormHighlight();
       if (code.trim() === '') {
-        clearLastFormHighlight();
         return;
       }
       highlightLastForm(code);
-    });
+    }
+
+    // Highlight on every cursor movement
+    editor.on('cursorActivity', updateHighlight);
 
     document.getElementById('eval-all-btn').onclick = () => {
       const code = getAllForms();
