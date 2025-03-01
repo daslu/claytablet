@@ -43,24 +43,24 @@
 
 (defroutes app-routes
   (GET "/" []
-    (-> (response/resource-response "index.html" {:root "public"})
-        (response/content-type "text/html; charset=utf-8")))
+       (-> (response/resource-response "index.html" {:root "public"})
+           (response/content-type "application/html; charset=utf-8")))
   (GET "/api/files" [] (response/response (json/generate-string (list-files))))
   (GET "/api/files/*" [*] 
-    (let [path (str "/" *)]
-      (response/response (json/generate-string (load-file path)))))
+       (let [path (str "/" *)]
+         (response/response (json/generate-string (load-file path)))))
   (POST "/api/files/*" [* :as req] 
-    (let [path (str "/" *)
-          content (slurp (:body req))]
-      (response/response (json/generate-string (save-file path content)))))
+        (let [path (str "/" *)
+              content (slurp (:body req))]
+          (response/response (json/generate-string (save-file path content)))))
   (POST "/api/eval" {body :body}
-    (let [code (slurp body)]
-      (response/response (json/generate-string (eval-code code)))))
+        (let [code (slurp body)]
+          (response/response (json/generate-string (eval-code code)))))
   (route/resources "/")
   (route/not-found "Not Found"))
 
 (def app
-  (wrap-defaults app-routes site-defaults))
+  (wrap-defaults #'app-routes site-defaults))
 
 (defn -main []
   (start-nrepl)
