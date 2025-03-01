@@ -96,7 +96,7 @@
         return;
       }
       const content = editor.getValue();
-      fetch(`/api/files${currentFilePath}`, {
+      fetch(`/api/files/${currentFilePath}`, {
         method: 'POST',
         body: content
       })
