@@ -64,7 +64,7 @@
   {:status "success"})
 
 (defn eval-code [code]
-  ;; Evaluate the provided Clojure code via nREPL
+  ;; Evaluate the provided Clojure code via nREPL and return only the last value
   (try
     (let [conn (nrepl/connect :port 7000)
           client (nrepl/client conn 1000)
@@ -72,8 +72,8 @@
           results (->> msgs
                        (filter #(contains? % :value))
                        (map :value)
-                       (str/join "\n"))]
-      {:result results})
+                       last)]
+      {:result (or results "")})
     (catch Exception e
       {:result (str "Error: " (.getMessage e))})))
 
