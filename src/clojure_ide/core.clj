@@ -4,16 +4,14 @@
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
             [ring.util.response :as response]
             [cheshire.core :as json]
-            [nrepl.server :refer [start-server stop-server]]
-            [nrepl.cmdline :refer [default-handler]]
+            [nrepl.server :refer [start-server stop-server default-handler]]
             [cider.piggieback :refer [wrap-cljs-repl]]))
 
 (defonce server (atom nil))
 
 (defn start-nrepl []
   (reset! server (start-server :port 7000
-                               :init (fn [client]
-                                       (default-handler client)))))
+                               :handler default-handler)))
 
 (defn stop-nrepl []
   (when @server
