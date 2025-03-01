@@ -247,8 +247,6 @@
     }
 
     // Highlighting Functions
-    let lastFormHighlight = null;
-
     function highlightLastForm(code) {
       clearLastFormHighlight();
 
@@ -304,9 +302,10 @@
     document.getElementById('eval-all-btn').onclick = () => {
       const code = getAllForms();
       evaluateCode(code);
-      // Highlight the last non-empty line
-      const lastLine = code.split('\n').filter(line => line.trim() !== '').pop() || '';
-      highlightLastForm(lastLine);
+      // Highlight the last non-empty form or literal
+      const allForms = getClojureForms(code).concat(getLastLiterals(code));
+      const lastForm = allForms.length >0 ? allForms[allForms.length -1] : '';
+      highlightLastForm(lastForm);
     };
 
     document.getElementById('eval-last-btn').onclick = () => {
@@ -334,9 +333,10 @@
       'Ctrl-Alt-Enter': () => {
         const code = getAllForms();
         evaluateCode(code);
-        // Highlight the last non-empty line
-        const lastLine = code.split('\n').filter(line => line.trim() !== '').pop() || '';
-        highlightLastForm(lastLine);
+        // Highlight the last non-empty form or literal
+        const allForms = getClojureForms(code).concat(getLastLiterals(code));
+        const lastForm = allForms.length >0 ? allForms[allForms.length -1] : '';
+        highlightLastForm(lastForm);
       },
       'Ctrl-Alt-L': () => {
         const code = getLastFormBeforeCursor();
