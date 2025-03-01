@@ -96,7 +96,7 @@
   (route/not-found "Not Found"))
 
 (def app
-  (wrap-defaults #'app-routes site-defaults))
+  (wrap-defaults #'app-routes (assoc-in site-defaults [:security :anti-forgery] false)))
 
 (defn -main []
   (start-nrepl)
