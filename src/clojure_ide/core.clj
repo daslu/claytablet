@@ -41,7 +41,8 @@
             (file-seq file))))
 
 (defn list-files []
-  (let [clojure-files (list-clojure-files "./src")]
+  (let [clojure-files (concat (list-clojure-files "./notebooks")
+                              (list-clojure-files "./src"))]
     (mapv (fn [f]
             {:name (.getName f)
              :path (.getPath f)})
