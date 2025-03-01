@@ -11,12 +11,13 @@
             [clojure.java.io :as io]
             [clojure.string :as str]))
 
+(declare app)
+
 (defonce nrepl-server (atom nil))
 (defonce jetty-server (atom nil))
 
 (defn start-nrepl []
-  (reset! nrepl-server (start-server :port 7000
-                                    :handler default-handler))
+  (reset! nrepl-server (start-server :port 7000))
   (println "nREPL server started on port 7000"))
 
 (defn stop-nrepl []
