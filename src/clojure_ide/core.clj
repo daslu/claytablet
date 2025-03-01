@@ -16,7 +16,8 @@
 
 (defn start-nrepl []
   (reset! nrepl-server (start-server :port 7000
-                                     :handler default-handler))
+                                     ;; :handler default-handler
+                                     ))
   (println "nREPL server started on port 7000"))
 
 (defn stop-nrepl []
