@@ -249,27 +249,25 @@
     }
 
     // Highlighting Functions
-    let lastFormHighlighted = null;
+    let lastFormHighlight = null;
 
     function highlightLastForm(code) {
       clearLastFormHighlight();
 
       if (code.trim() === '') return;
 
-      const cursorCoords = editor.cursorCoords();
-      let found = false;
       const doc = editor.getDoc();
-      const cursor = editor.getCursor();
+      let found = false;
 
       // Iterate through the document to find the exact form
       doc.eachLine((lineHandle) => {
         const line = lineHandle.lineNo();
         const lineText = doc.getLine(line);
-        const index = lineText.indexOf(code);
+        const index = lineText.lastIndexOf(code);
         if (index !== -1) {
           const from = {line: line, ch: index};
           const to = {line: line, ch: index + code.length};
-          lastFormHighlighted = editor.markText(from, to, {className: 'highlight-last-form'});
+          lastFormHighlight = editor.markText(from, to, {className: 'highlight-last-form'});
           found = true;
           return false; // Stop iteration
         }
@@ -277,17 +275,18 @@
 
       if (!found) {
         // If not found, try to highlight based on cursor position
+        const cursor = editor.getCursor();
         const st = editor.getSearchCursor(code, cursor);
-        if (st.findNext()) {
-          lastFormHighlighted = editor.markText(st.from(), st.to(), {className: 'highlight-last-form'});
+        if (st.findPrevious()) {
+          lastFormHighlight = editor.markText(st.from(), st.to(), {className: 'highlight-last-form'});
         }
       }
     }
 
     function clearLastFormHighlight() {
-      if (lastFormHighlighted) {
-        lastFormHighlighted.clear();
-        lastFormHighlighted = null;
+      if (lastFormHighlight) {
+        lastFormHighlight.clear();
+        lastFormHighlight = null;
       }
     }
 
