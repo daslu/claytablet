@@ -14,6 +14,8 @@
     .file:hover { background-color: #e0e0e0; }
     #instructions { padding: 10px; background-color: #f0f0f0; border-bottom: 1px solid #ccc; }
     .file-path { font-size: 0.9em; color: #555; }
+    #eval-buttons { margin: 10px 0; }
+    #eval-buttons button { margin-right: 5px; }
   </style>
 </head>
 <body>
@@ -29,8 +31,18 @@
         <li>Select a file from the <strong>Files</strong> pane to load it into the editor.</li>
         <li>Edit the Clojure code in the <strong>Editor</strong> pane.</li>
         <li>Click the <strong>Save</strong> button to save your changes.</li>
-        <li>Press <strong>Ctrl+Enter</strong> to evaluate the code and see the output in the <strong>Output</strong> pane.</li>
+        <li>Use the evaluation buttons below or the corresponding keyboard shortcuts:</li>
+        <ul>
+          <li><strong>Evaluate All Forms</strong> (Button & Ctrl+Alt+Enter)</li>
+          <li><strong>Evaluate Last Form Before Cursor</strong> (Button & Ctrl+Alt+L)</li>
+          <li><strong>Evaluate Top-Level Form</strong> (Button & Ctrl+Alt+T)</li>
+        </ul>
       </ul>
+    </div>
+    <div id="eval-buttons">
+      <button id="eval-all-btn">Evaluate All Forms</button>
+      <button id="eval-last-btn">Evaluate Last Form</button>
+      <button id="eval-top-btn">Evaluate Top-Level Form</button>
     </div>
     <h3>Editor</h3>
     <div id="editor-area"></div>
@@ -74,7 +86,7 @@
     }
 
     function loadFile(path) {
-      fetch(`/api/files/${path}`)
+      fetch(`/api/files/${encodeURIComponent(path)}`)
         .then(response => {
           if (!response.ok) {
             throw new Error('File not found');
@@ -96,7 +108,7 @@
         return;
       }
       const content = editor.getValue();
-      fetch(`/api/files/${currentFilePath}`, {
+      fetch(`/api/files/${encodeURIComponent(currentFilePath)}`, {
         method: 'POST',
         body: content
       })
@@ -113,21 +125,163 @@
       });
     };
 
-    // Example: Evaluate code on Ctrl+Enter
+    // Evaluation functions
+    function evaluateCode(code) {
+      fetch('/api/eval', {
+        method: 'POST',
+        body: code
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('output').textContent = data.result;
+      })
+      .catch(() => {
+        document.getElementById('output').textContent = 'Error evaluating code.';
+      });
+    }
+
+    function getAllForms() {
+      return editor.getValue();
+    }
+
+    function getLastFormBeforeCursor() {
+      const cursor = editor.getCursor();
+      const beforeCursor = editor.getRange({line:0, ch:0}, cursor);
+      const forms = getClojureForms(beforeCursor);
+      return forms.length > 0 ? forms[forms.length -1] : '';
+    }
+
+    function getTopLevelForm() {
+      const cursor = editor.getCursor();
+      const pos = {line: cursor.line, ch: cursor.ch};
+      const token = editor.getTokenAt(pos);
+      const line = pos.line;
+      let startLine = line;
+      let startCh = 0;
+      // Find the start of the top-level form
+      for (let l = line; l >=0; l--) {
+        const text = editor.getLine(l);
+        const openParen = text.lastIndexOf('(');
+        const openBracket = text.lastIndexOf('[');
+        const openBrace = text.lastIndexOf('{');
+        const lastOpen = Math.max(openParen, openBracket, openBrace);
+        if (lastOpen !== -1) {
+          startLine = l;
+          startCh = lastOpen;
+          break;
+        }
+      }
+      // Find the end of the form
+      let endLine = line;
+      let endCh = editor.getLine(line).length;
+      for (let l = line; l < editor.lineCount(); l++) {
+        const text = editor.getLine(l);
+        const closeParen = text.indexOf(')');
+        const closeBracket = text.indexOf(']');
+        const closeBrace = text.indexOf('}');
+        const closeQuote = text.indexOf('"');
+        const firstClose = [closeParen, closeBracket, closeBrace, closeQuote].filter(c => c !== -1);
+        if (firstClose.length > 0) {
+          endLine = l;
+          endCh = Math.min(...firstClose) + 1;
+          break;
+        }
+      }
+      return editor.getRange({line: startLine, ch: startCh}, {line: endLine, ch: endCh});
+    }
+
+    // Simple Clojure form extractor (not fully reliable)
+    function getClojureForms(code) {
+      const forms = [];
+      let stack = [];
+      let currentForm = '';
+      let inString = false;
+      for (let i =0; i< code.length; i++) {
+        const char = code[i];
+        if (char === '"') {
+          inString = !inString;
+        }
+        if (!inString) {
+          if (char === '(' || char === '[' || char === '{') {
+            stack.push(char);
+            currentForm += char;
+          }
+          else if (char === ')' || char === ']' || char === '}') {
+            if (stack.length ===0) continue;
+            const last = stack.pop();
+            // Simple matching, not handling quotes or escaped chars
+            if ((last === '(' && char === ')') ||
+                (last === '[' && char === ']') ||
+                (last === '{' && char === '}')) {
+              currentForm += char;
+              if (stack.length ===0) {
+                forms.push(currentForm.trim());
+                currentForm = '';
+              }
+            }
+            else {
+              // Mismatched, ignore
+            }
+          }
+          else {
+            if (stack.length >0) {
+              currentForm += char;
+            }
+          }
+        }
+        else {
+          if (stack.length >0) {
+            currentForm += char;
+          }
+        }
+      }
+      return forms;
+    }
+
+    document.getElementById('eval-all-btn').onclick = () => {
+      const code = getAllForms();
+      evaluateCode(code);
+    };
+
+    document.getElementById('eval-last-btn').onclick = () => {
+      const code = getLastFormBeforeCursor();
+      if (code.trim() === '') {
+        alert('No form found before cursor.');
+        return;
+      }
+      evaluateCode(code);
+    };
+
+    document.getElementById('eval-top-btn').onclick = () => {
+      const code = getTopLevelForm();
+      if (code.trim() === '') {
+        alert('No top-level form found.');
+        return;
+      }
+      evaluateCode(code);
+    };
+
+    // Key bindings
     editor.setOption('extraKeys', {
-      'Ctrl-Enter': () => {
-        const code = editor.getValue();
-        fetch('/api/eval', {
-          method: 'POST',
-          body: code
-        })
-        .then(response => response.json())
-        .then(data => {
-          document.getElementById('output').textContent = data.result;
-        })
-        .catch(() => {
-          document.getElementById('output').textContent = 'Error evaluating code.';
-        });
+      'Ctrl-Alt-Enter': () => {
+        const code = getAllForms();
+        evaluateCode(code);
+      },
+      'Ctrl-Alt-L': () => {
+        const code = getLastFormBeforeCursor();
+        if (code.trim() === '') {
+          alert('No form found before cursor.');
+          return;
+        }
+        evaluateCode(code);
+      },
+      'Ctrl-Alt-T': () => {
+        const code = getTopLevelForm();
+        if (code.trim() === '') {
+          alert('No top-level form found.');
+          return;
+        }
+        evaluateCode(code);
       }
     });
 

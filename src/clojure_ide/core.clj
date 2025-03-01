@@ -16,8 +16,7 @@
 
 (defn start-nrepl []
   (reset! nrepl-server (start-server :port 7000
-                                     ;; :handler default-handler
-                                     ))
+                                    :handler default-handler))
   (println "nREPL server started on port 7000"))
 
 (defn stop-nrepl []
@@ -25,6 +24,20 @@
     (stop-server @nrepl-server)
     (reset! nrepl-server nil)
     (println "nREPL server stopped")))
+
+(defn start-jetty []
+  (reset! jetty-server (run-jetty app {:port 3000 :join? false}))
+  (println "Jetty server started on port 3000"))
+
+(defn stop-jetty []
+  (when @jetty-server
+    (.stop @jetty-server)
+    (reset! jetty-server nil)
+    (println "Jetty server stopped")))
+
+(defn restart-jetty []
+  (stop-jetty)
+  (start-jetty))
 
 (defn list-clojure-files [dir]
   (let [file (io/file dir)]
@@ -97,20 +110,6 @@
 
 (def app
   (wrap-defaults #'app-routes (assoc-in site-defaults [:security :anti-forgery] false)))
-
-(defn start-jetty []
-  (reset! jetty-server (run-jetty app {:port 3000 :join? false}))
-  (println "Jetty server started on port 3000"))
-
-(defn stop-jetty []
-  (when @jetty-server
-    (.stop @jetty-server)
-    (reset! jetty-server nil)
-    (println "Jetty server stopped")))
-
-(defn restart-jetty []
-  (stop-jetty)
-  (start-jetty))
 
 (defn -main []
   (start-nrepl)
