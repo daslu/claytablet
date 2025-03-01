@@ -69,7 +69,7 @@
           data.forEach(file => {
             const fileDiv = document.createElement('div');
             fileDiv.className = 'file';
-            
+
             const fileName = document.createElement('div');
             fileName.textContent = file.name;
 
@@ -148,7 +148,12 @@
       const cursor = editor.getCursor();
       const beforeCursor = editor.getRange({line:0, ch:0}, cursor);
       const forms = getClojureForms(beforeCursor);
-      return forms.length > 0 ? forms[forms.length -1] : '';
+      if (forms.length > 0) {
+        return forms[forms.length -1];
+      } else {
+        const literals = getLastLiterals(beforeCursor);
+        return literals.length > 0 ? literals[literals.length -1] : '';
+      }
     }
 
     function getTopLevelForm() {
@@ -231,6 +236,12 @@
       return forms;
     }
 
+    function getLastLiterals(code) {
+      const regex = /"(?:\\.|[^"\\])*"|\b\d+\b|\btrue\b|\bfalse\b|\bnil\b/g;
+      const matches = code.match(regex);
+      return matches ? matches : [];
+    }
+
     document.getElementById('eval-all-btn').onclick = () => {
       const code = getAllForms();
       evaluateCode(code);
@@ -239,7 +250,7 @@
     document.getElementById('eval-last-btn').onclick = () => {
       const code = getLastFormBeforeCursor();
       if (code.trim() === '') {
-        alert('No form found before cursor.');
+        alert('No form or literal found before cursor.');
         return;
       }
       evaluateCode(code);
@@ -263,7 +274,7 @@
       'Ctrl-Alt-L': () => {
         const code = getLastFormBeforeCursor();
         if (code.trim() === '') {
-          alert('No form found before cursor.');
+          alert('No form or literal found before cursor.');
           return;
         }
         evaluateCode(code);
