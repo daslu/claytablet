@@ -154,40 +154,33 @@
     function getTopLevelForm() {
       const cursor = editor.getCursor();
       const pos = {line: cursor.line, ch: cursor.ch};
+      let form = '';
+
+      // Check if the cursor is inside a form
       const token = editor.getTokenAt(pos);
-      const line = pos.line;
-      let startLine = line;
-      let startCh = 0;
-      // Find the start of the top-level form
-      for (let l = line; l >=0; l--) {
-        const text = editor.getLine(l);
-        const openParen = text.lastIndexOf('(');
-        const openBracket = text.lastIndexOf('[');
-        const openBrace = text.lastIndexOf('{');
-        const lastOpen = Math.max(openParen, openBracket, openBrace);
-        if (lastOpen !== -1) {
-          startLine = l;
-          startCh = lastOpen;
-          break;
-        }
+      if (['(', '[', '{', '"'].includes(token.string)) {
+        form = getCurrentForm(pos);
+      } else {
+        // Not inside a form, find the top-level form to the left
+        form = getTopLevelFormLeftOfCursor(pos);
       }
-      // Find the end of the form
-      let endLine = line;
-      let endCh = editor.getLine(line).length;
-      for (let l = line; l < editor.lineCount(); l++) {
-        const text = editor.getLine(l);
-        const closeParen = text.indexOf(')');
-        const closeBracket = text.indexOf(']');
-        const closeBrace = text.indexOf('}');
-        const closeQuote = text.indexOf('"');
-        const firstClose = [closeParen, closeBracket, closeBrace, closeQuote].filter(c => c !== -1);
-        if (firstClose.length > 0) {
-          endLine = l;
-          endCh = Math.min(...firstClose) + 1;
-          break;
-        }
-      }
-      return editor.getRange({line: startLine, ch: startCh}, {line: endLine, ch: endCh});
+
+      return form;
+    }
+
+    function getCurrentForm(pos) {
+      // Implement a more robust form detection if necessary
+      // For simplicity, using getClojureForms on the entire code
+      const code = editor.getValue();
+      const forms = getClojureForms(code);
+      if (forms.length === 0) return '';
+      return forms[forms.length -1];
+    }
+
+    function getTopLevelFormLeftOfCursor(pos) {
+      const code = editor.getRange({line:0, ch:0}, pos);
+      const forms = getClojureForms(code);
+      return forms.length > 0 ? forms[forms.length -1] : '';
     }
 
     // Simple Clojure form extractor (not fully reliable)
