@@ -42,7 +42,9 @@
   {:result "(println \"Hello from nREPL\")"})
 
 (defroutes app-routes
-  (GET "/" [] (response/resource-response "index.html" {:root "public"}))
+  (GET "/" []
+    (-> (response/resource-response "index.html" {:root "public"})
+        (response/content-type "text/html; charset=utf-8")))
   (GET "/api/files" [] (response/response (json/generate-string (list-files))))
   (GET "/api/files/*" [*] 
     (let [path (str "/" *)]
