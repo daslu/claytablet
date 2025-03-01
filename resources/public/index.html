@@ -74,7 +74,7 @@
     }
 
     function loadFile(path) {
-      fetch(`/api/files${path}`)
+      fetch(`/api/files/${path}`)
         .then(response => {
           if (!response.ok) {
             throw new Error('File not found');

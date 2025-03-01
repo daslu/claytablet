@@ -64,33 +64,33 @@
 
 (defroutes app-routes
   (GET "/" []
-    (-> (response/resource-response "index.html" {:root "public"})
-        (response/content-type "text/html; charset=utf-8")))
+       (-> (response/resource-response "index.html" {:root "public"})
+           (response/content-type "text/html; charset=utf-8")))
   (GET "/api/files" []
-    (-> (response/response (json/generate-string (list-files)))
-        (response/content-type "application/json; charset=utf-8")))
+       (-> (response/response (json/generate-string (list-files)))
+           (response/content-type "application/json; charset=utf-8")))
   (GET "/api/files/*" [*]
-    (let [path (str "./" *)
-          file (io/file path)]
-      (if (.exists file)
-        (-> (response/response (json/generate-string (load-file path)))
-            (response/content-type "application/json; charset=utf-8"))
-        (-> (response/response (json/generate-string {:error "File not found"}))
-            (response/status 404)
-            (response/content-type "application/json; charset=utf-8")))))
+       (let [path *
+             file (io/file path)]
+         (if (.exists file)
+           (-> (response/response (json/generate-string (load-file path)))
+               (response/content-type "application/json; charset=utf-8"))
+           (-> (response/response (json/generate-string {:error "File not found"}))
+               (response/status 404)
+               (response/content-type "application/json; charset=utf-8")))))
   (POST "/api/files/*" [* :as req]
-    (let [path (str "./" *)
-          content (slurp (:body req))]
-      (if (.exists (io/file path))
-        (-> (response/response (json/generate-string (save-file path content)))
-            (response/content-type "application/json; charset=utf-8"))
-        (-> (response/response (json/generate-string {:error "File not found"}))
-            (response/status 404)
-            (response/content-type "application/json; charset=utf-8")))))
+        (let [path (str "./" *)
+              content (slurp (:body req))]
+          (if (.exists (io/file path))
+            (-> (response/response (json/generate-string (save-file path content)))
+                (response/content-type "application/json; charset=utf-8"))
+            (-> (response/response (json/generate-string {:error "File not found"}))
+                (response/status 404)
+                (response/content-type "application/json; charset=utf-8")))))
   (POST "/api/eval" {body :body}
-    (let [code (slurp body)]
-      (-> (response/response (json/generate-string (eval-code code)))
-          (response/content-type "application/json; charset=utf-8"))))
+        (let [code (slurp body)]
+          (-> (response/response (json/generate-string (eval-code code)))
+              (response/content-type "application/json; charset=utf-8"))))
   (route/resources "/")
   (route/not-found "Not Found"))
 
