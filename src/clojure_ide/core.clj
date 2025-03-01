@@ -43,8 +43,9 @@
 (defn load-file [path]
   ;; Placeholder for loading file content
   ;; Implement file reading logic here
+  (prn [:path path])
   {:path path
-   :content "(ns clojure-ide.core)\n\n(defn hello []\n  (println \"Hello, World!\"))"})
+   :content (slurp (str "./" path))})
 
 (defn save-file [path content]
   ;; Placeholder for saving file content
