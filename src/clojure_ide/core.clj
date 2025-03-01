@@ -1,5 +1,5 @@
 (ns clojure-ide.core
-  (:require [compojure.core :refer [GET POST routes]]
+  (:require [compojure.core :refer [GET POST routes defroutes]]
             [compojure.route :as route]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
             [ring.util.response :as response]
