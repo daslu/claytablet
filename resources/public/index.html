@@ -12,6 +12,7 @@
     #output { height: 30vh; border-top: 1px solid #ccc; padding: 10px; overflow-y: auto; background-color: #f9f9f9; }
     .file { cursor: pointer; padding: 5px; }
     .file:hover { background-color: #e0e0e0; }
+    #instructions { padding: 10px; background-color: #f0f0f0; border-bottom: 1px solid #ccc; }
   </style>
 </head>
 <body>
@@ -21,6 +22,15 @@
     <button id="save-btn">Save</button>
   </div>
   <div id="editor">
+    <div id="instructions">
+      <h3>Instructions</h3>
+      <ul>
+        <li>Select a file from the <strong>Files</strong> pane to load it into the editor.</li>
+        <li>Edit the Clojure code in the <strong>Editor</strong> pane.</li>
+        <li>Click the <strong>Save</strong> button to save your changes.</li>
+        <li>Press <strong>Ctrl+Enter</strong> to evaluate the code and see the output in the <strong>Output</strong> pane.</li>
+      </ul>
+    </div>
     <h3>Editor</h3>
     <div id="editor-area"></div>
     <h3>Output</h3>
