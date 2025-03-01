@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Clojure IDE</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; display: flex; height: 100vh; }
+    #file-browser { width: 20%; border-right: 1px solid #ccc; padding: 10px; overflow-y: auto; }
+    #editor { width: 80%; padding: 10px; }
+    #editor-area { height: 70vh; }
+    #output { height: 30vh; border-top: 1px solid #ccc; padding: 10px; overflow-y: auto; background-color: #f9f9f9; }
+    .file { cursor: pointer; padding: 5px; }
+    .file:hover { background-color: #e0e0e0; }
+  </style>
+</head>
+<body>
+  <div id="file-browser">
+    <h3>Files</h3>
+    <div id="files"></div>
+    <button id="save-btn">Save</button>
+  </div>
+  <div id="editor">
+    <h3>Editor</h3>
+    <div id="editor-area"></div>
+    <h3>Output</h3>
+    <div id="output"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clojure/clojure.min.js"></script>
+  <script>
+    let currentFilePath = null;
+    const editor = CodeMirror(document.getElementById('editor-area'), {
+      mode: 'clojure',
+      lineNumbers: true,
+      value: '// Select a file to start editing'
+    });
+
+    function fetchFiles() {
+      fetch('/api/files')
+        .then(response => response.json())
+        .then(data => {
+          const filesDiv = document.getElementById('files');
+          filesDiv.innerHTML = '';
+          data.forEach(file => {
+            const fileDiv = document.createElement('div');
+            fileDiv.className = 'file';
+            fileDiv.textContent = file.name;
+            fileDiv.onclick = () => loadFile(file.path);
+            filesDiv.appendChild(fileDiv);
+          });
+        });
+    }
+
+    function loadFile(path) {
+      fetch(`/api/files${path}`)
+        .then(response => response.json())
+        .then(data => {
+          currentFilePath = data.path;
+          editor.setValue(data.content);
+        });
+    }
+
+    document.getElementById('save-btn').onclick = () => {
+      if (!currentFilePath) {
+        alert('No file selected.');
+        return;
+      }
+      const content = editor.getValue();
+      fetch(`/api/files${currentFilePath}`, {
+        method: 'POST',
+        body: content
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          alert('File saved successfully.');
+        } else {
+          alert('Failed to save file.');
+        }
+      });
+    };
+
+    editor.on('change', () => {
+      // Optionally, implement auto-save or live evaluation
+    });
+
+    // Example: Evaluate code on Ctrl+Enter
+    editor.setOption('extraKeys', {
+      'Ctrl-Enter': () => {
+        const code = editor.getValue();
+        fetch('/api/eval', {
+          method: 'POST',
+          body: code
+        })
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('output').textContent = data.result;
+        });
+      }
+    });
+
+    // Initial fetch of files
+    fetchFiles();
+  </script>
+</body>
+</html>
