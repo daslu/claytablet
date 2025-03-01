@@ -11,7 +11,7 @@ A simple Clojure-based web IDE that supports browsing, loading, saving, and edit
 
 ## Requirements
 
-- [Leiningen](https://leiningen.org/) installed.
+- [Clojure CLI Tools](https://clojure.org/guides/getting_started) installed.
 
 ## Running the Application
 
@@ -23,12 +23,13 @@ A simple Clojure-based web IDE that supports browsing, loading, saving, and edit
 
 2. **Start the server**:
    ```
-   lein run
+   clojure -M:run
    ```
 
 3. **Access the IDE**:
    Open your browser and navigate to `http://localhost:3000`.
 
-## License
+## Development
 
-MIT License
+To run the application in development mode with additional dependencies:
+

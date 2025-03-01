@@ -5,7 +5,7 @@
             [ring.util.response :as response]
             [cheshire.core :as json]
             [nrepl.server :refer [start-server stop-server default-handler]]
-            [nrepl.core :as nrepl]
+            [nrepl.client :as client]
             [cider.piggieback :refer [wrap-cljs-repl]]
             [ring.adapter.jetty :refer [run-jetty]]
             [clojure.java.io :as io]
@@ -65,7 +65,7 @@
 (defn eval-code [code]
   ;; Evaluate the provided Clojure code via nREPL
   (try
-    (with-open [conn (nrepl/connect :port 7000)]
+    (with-open [conn (client/connect :port 7000)]
       (let [msgs (client/message conn {:op "eval" :code code})
             results (->> msgs
                          (filter #(contains? % :value))
@@ -74,14 +74,6 @@
         {:result results}))
     (catch Exception e
       {:result (str "Error: " (.getMessage e))})))
-
-(start-server :port 7001
-              :handler default-handler)
-
-;; (with-open [conn (nrepl/connect :port 7001)]
-;;   (-> (nrepl/client conn 1000)    ; message receive timeout required
-;;       (nrepl/message {:op "eval" :code "(+ 2 3)"})
-;;       nrepl/response-values))
 
 (defroutes app-routes
   (GET "/" []
