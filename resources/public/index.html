@@ -254,23 +254,33 @@
     function highlightLastForm(code) {
       clearLastFormHighlight();
 
-      const totalLines = editor.lineCount();
-      let found = false;
+      if (code.trim() === '') return;
 
-      for (let line = 0; line < totalLines; line++) {
-        const lineContent = editor.getLine(line);
-        const index = lineContent.lastIndexOf(code);
+      const cursorCoords = editor.cursorCoords();
+      let found = false;
+      const doc = editor.getDoc();
+      const cursor = editor.getCursor();
+
+      // Iterate through the document to find the exact form
+      doc.eachLine((lineHandle) => {
+        const line = lineHandle.lineNo();
+        const lineText = doc.getLine(line);
+        const index = lineText.indexOf(code);
         if (index !== -1) {
           const from = {line: line, ch: index};
           const to = {line: line, ch: index + code.length};
           lastFormHighlighted = editor.markText(from, to, {className: 'highlight-last-form'});
           found = true;
-          break;
+          return false; // Stop iteration
         }
-      }
+      });
 
-      if (!found && code.trim() !== '') {
-        alert('Could not find the last form in the editor to highlight.');
+      if (!found) {
+        // If not found, try to highlight based on cursor position
+        const st = editor.getSearchCursor(code, cursor);
+        if (st.findNext()) {
+          lastFormHighlighted = editor.markText(st.from(), st.to(), {className: 'highlight-last-form'});
+        }
       }
     }
 
@@ -281,10 +291,22 @@
       }
     }
 
+    // Highlight on every cursor movement
+    editor.on('cursorActivity', () => {
+      const code = getLastFormBeforeCursor();
+      if (code.trim() === '') {
+        clearLastFormHighlight();
+        return;
+      }
+      highlightLastForm(code);
+    });
+
     document.getElementById('eval-all-btn').onclick = () => {
       const code = getAllForms();
       evaluateCode(code);
-      highlightLastForm(code.split('\n').filter(line => line.trim() !== '').pop() || '');
+      // Highlight the last non-empty line
+      const lastLine = code.split('\n').filter(line => line.trim() !== '').pop() || '';
+      highlightLastForm(lastLine);
     };
 
     document.getElementById('eval-last-btn').onclick = () => {
@@ -312,7 +334,9 @@
       'Ctrl-Alt-Enter': () => {
         const code = getAllForms();
         evaluateCode(code);
-        highlightLastForm(code.split('\n').filter(line => line.trim() !== '').pop() || '');
+        // Highlight the last non-empty line
+        const lastLine = code.split('\n').filter(line => line.trim() !== '').pop() || '';
+        highlightLastForm(lastLine);
       },
       'Ctrl-Alt-L': () => {
         const code = getLastFormBeforeCursor();
