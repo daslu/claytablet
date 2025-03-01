@@ -5,7 +5,8 @@
             [ring.util.response :as response]
             [cheshire.core :as json]
             [nrepl.server :refer [start-server stop-server default-handler]]
-            [cider.piggieback :refer [wrap-cljs-repl]]))
+            [cider.piggieback :refer [wrap-cljs-repl]]
+            [ring.adapter.jetty :refer [run-jetty]]))
 
 (defonce server (atom nil))
 
