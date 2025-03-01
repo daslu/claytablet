@@ -80,7 +80,7 @@
                (response/status 404)
                (response/content-type "application/json; charset=utf-8")))))
   (POST "/api/files/*" [* :as req]
-        (let [path (str "./" *)
+        (let [path *
               content (slurp (:body req))]
           (if (.exists (io/file path))
             (-> (response/response (json/generate-string (save-file path content)))
